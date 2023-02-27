@@ -30,25 +30,9 @@ def get_peer_info(net_info: Dict) -> int:
     return net_info["result"]["n_peers"]
 
 
-def handle_lost_peers() -> tuple:
-    message = f"❌ | node: { RPC } | peers lost, node restarted"
-    output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
-    peer_output = output.stdout.decode("utf-8")
-    logger.warning(f"peers lost output: {peer_output}, code: {output.returncode}")
-    return message, output
-
-
-def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
-    message: str = ""
-    output
+def is_stalled(catching_up: bool, latest_block_time: str) -> bool:
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%H:%M:%S")
-    if not catching_up and node_stalled(block_time):
-        output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
-        stalled_output = output.stdout.decode("utf-8")
-        logger.warning(f"stalled node output: {stalled_output}, code: {output.returncode}")
-        message = f"❌ | node: { RPC } | stalled, node restarted"
-    return message, output
-
+    return not catching_up and node_stalled(block_time)
 
 def node_stalled(block_time: datetime) -> bool:
     return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
@@ -86,10 +70,32 @@ def parseArgs():
     return parser.parse_args()
 
 
-def reduce_block_time(block_time: str) -> str:
+def format_block_time(block_time: str) -> str:
     # turns block time from 2023-02-27T00:48:50.822051683Z to 2023-02-27T00:48:50
     return block_time[:19]
 
+
+def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple(bool, str):
+    alert_message = f"❌ | node: { RPC } | "
+    restart = False
+
+    if is_stalled(catching_up, format_block_time(block_time)):
+        restart = True
+        alert_message = f'{ alert_message } node stalled, node restarted'
+    elif not peer_count:
+        restart = True
+        alert_message = f'{ alert_message } peers lost, node restarted'
+
+    if restart:
+        output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
+        restart_output = output.stdout.decode("utf-8")
+        logger.warning(f"node output: { restart_output }, code: { output.returncode }")
+
+    return restart, alert_message
+
+def alert(alert_message: str):
+    if DISCORD_WEBHOOK:
+        DISCORD_WEBHOOK.send(alert_message)
 
 def main():
     global DAEMON
@@ -103,22 +109,16 @@ def main():
     DISCORD_WEBHOOK = SyncWebhook.from_url(args.discord)
     RPC = args.rpc
 
-    message: str
-
     status = requests.get(f"{ RPC }/status").json()
     net_info = requests.get(f"{ RPC }/net_info").json()
 
     catching_up, latest_block_time = get_status_info(status["result"]["sync_info"])
     peer_count = get_peer_info(net_info)
-    if not peer_count:
-        message, status = handle_lost_peers()
-    else:
-        message, status = handle_stalled(catching_up, reduce_block_time(latest_block_time))
 
-    if message:
-        logger.info(message + f" | status: { status }")
-        if DISCORD_WEBHOOK:
-            DISCORD_WEBHOOK.send(message)
+    restart, alert_message = handle_restart(peer_count, catching_up, format_block_time(latest_block_time))
+    
+    if restart:
+        alert(alert_message)
     else:
         logger.info(f"✅ | node: { RPC } | healthy")
 
