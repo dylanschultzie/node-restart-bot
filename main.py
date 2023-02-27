@@ -19,6 +19,7 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
+
 def get_status_info(sync_info: Dict) -> tuple:
     catching_up = sync_info["catching_up"]
     latest_block_time = sync_info["latest_block_time"]
@@ -30,28 +31,27 @@ def get_peer_info(net_info: Dict) -> int:
 
 
 def handle_lost_peers() -> tuple:
-    message = f'❌ | node: { RPC } | peers lost, node restarted'
+    message = f"❌ | node: { RPC } | peers lost, node restarted"
     status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
     return message, status
 
 
 def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
-    message: str = ''
-    status: str = ''
+    message: str = ""
+    status: str = ""
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%I:%M:%S")
     if not catching_up and node_stalled(block_time):
         status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
-        message = f'❌ | node: { RPC } | stalled, node restarted'
+        message = f"❌ | node: { RPC } | stalled, node restarted"
     return message, status
+
 
 def node_stalled(block_time: datetime) -> bool:
     return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
 
 
 def parseArgs():
-    parser = argparse.ArgumentParser(
-        description="Create script that will check if node is stalled, and restart if so."
-    )
+    parser = argparse.ArgumentParser(description="Create script that will check if node is stalled, and restart if so.")
     parser.add_argument(
         "-r",
         "--rpc",
@@ -81,9 +81,11 @@ def parseArgs():
     )
     return parser.parse_args()
 
+
 def reduce_block_time(block_time: str) -> str:
     # turns block time from 2023-02-27T00:48:50.822051683Z to 2023-02-27T00:48:50
     return block_time[:19]
+
 
 def main():
     global DAEMON
@@ -112,11 +114,11 @@ def main():
         message, status = handle_stalled(catching_up, reduce_block_time(latest_block_time))
 
     if message:
-        logger.info(message + f' | status: { status }')
+        logger.info(message + f" | status: { status }")
         if DISCORD_WEBHOOK:
             DISCORD_WEBHOOK.send(message)
     else:
-        logger.info(f'✅ | node: { RPC } | healthy')
+        logger.info(f"✅ | node: { RPC } | healthy")
 
 
 if __name__ == "__main__":
