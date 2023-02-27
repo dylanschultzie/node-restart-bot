@@ -5,6 +5,7 @@ import subprocess
 import argparse
 from discord import SyncWebhook
 import logging
+import json
 
 DAEMON: str
 STALL_MINUTES: int
@@ -83,7 +84,7 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
     if is_stalled(catching_up, format_block_time(block_time)):
         restart = True
         alert_message = f"{ alert_message } node stalled, node restarted"
-    elif not peer_count:
+    elif peer_count == 0:
         restart = True
         alert_message = f"{ alert_message } peers lost, node restarted"
 
@@ -95,25 +96,59 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
     return restart, alert_message
 
 
+def get_response(end_point: str, query_field=None, query_msg=None):
+    response = None
+
+    try:
+        if query_msg and query_field:
+            response = requests.get(end_point, params={query_field: query_msg})
+        else:
+            response = requests.get(end_point, params={})
+    except Exception as e:
+        logger.exception(e)
+
+    if response is not None and response.status_code == 200:
+        return json.loads(response.text)
+    else:
+        if response is not None:
+            logger.error(
+                "\n\t".join(
+                    (
+                        "Response Error",
+                        str(response.status_code),
+                        str(response.text),
+                    )
+                )
+            )
+        else:
+            logger.error("Response is None")
+
+        return None
+
+
 def alert(alert_message: str):
     if DISCORD_WEBHOOK:
         DISCORD_WEBHOOK.send(alert_message)
 
 
-def main():
+def get_args():
     global DAEMON
     global DISCORD_WEBHOOK
     global STALL_MINUTES
     global RPC
-    args = parseArgs()
 
+    args = parseArgs()
     DAEMON = args.service_file_name
     STALL_MINUTES = args.stall_minutes
     DISCORD_WEBHOOK = SyncWebhook.from_url(args.discord)
     RPC = args.rpc
 
-    status = requests.get(f"{ RPC }/status").json()
-    net_info = requests.get(f"{ RPC }/net_info").json()
+
+def main():
+    get_args()
+
+    status = get_response(f"{ RPC }/status")
+    net_info = get_response(f"{ RPC }/net_info")
 
     catching_up, latest_block_time = get_status_info(status["result"]["sync_info"])
     peer_count = get_peer_info(net_info)
