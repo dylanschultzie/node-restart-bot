@@ -13,7 +13,9 @@ RPC: str
 
 logger = logging.getLogger(__name__)
 stream_handler = logging.StreamHandler()
+formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
 stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
@@ -28,7 +30,7 @@ def get_peer_info(net_info: Dict) -> int:
 
 
 def handle_lost_peers() -> tuple:
-    message = f'❌ | { datetime.now() } | node: { RPC } | peers lost, node restarted'
+    message = f'❌ | node: { RPC } | peers lost, node restarted'
     status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
     return message, status
 
@@ -39,7 +41,7 @@ def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%I:%M:%S")
     if not catching_up and node_stalled(block_time):
         status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
-        message = f'❌ | { datetime.now() } | node: { RPC } | stalled, node restarted'
+        message = f'❌ | node: { RPC } | stalled, node restarted'
     return message, status
 
 def node_stalled(block_time: datetime) -> bool:
@@ -114,7 +116,7 @@ def main():
         if DISCORD_WEBHOOK:
             DISCORD_WEBHOOK.send(message)
     else:
-        logger.info(f'✅ | {datetime.now()} | node: { RPC } | healthy')
+        logger.info(f'✅ | node: { RPC } | healthy')
 
 
 if __name__ == "__main__":
