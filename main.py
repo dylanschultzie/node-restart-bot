@@ -94,16 +94,10 @@ def main():
     # status = requests.get("http://localhost:16257/status").json()
     # net_info = requests.get("http://localhost:16257/net_info").json()
     status = requests.get(f"{ RPC }/status").json()
-    print(status)
     net_info = requests.get(f"{ RPC }/net_info").json()
-    print(net_info)
 
     catching_up, latest_block_time = get_status_info(status["result"]["sync_info"])
     peer_count = get_peer_info(net_info)
-    print(catching_up)
-    print(latest_block_time)
-    print(peer_count)
-
     if not peer_count:
         message, status = handle_lost_peers()
     else:
