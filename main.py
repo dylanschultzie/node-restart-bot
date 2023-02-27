@@ -6,10 +6,10 @@ import argparse
 from discord import SyncWebhook
 import logging
 
-DAEMON = ""
-STALL_MINUTES = ""
+DAEMON: str
+STALL_MINUTES: int
 DISCORD_WEBHOOK: SyncWebhook
-RPC = ""
+RPC: str
 
 def get_status_info(sync_info: Dict) -> tuple:
     catching_up = sync_info["catching_up"]
