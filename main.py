@@ -3,10 +3,12 @@ import requests
 from datetime import datetime, timedelta
 import subprocess
 import argparse
+from discord import SyncWebhook
+import logging
 
 DAEMON = ""
 STALL_MINUTES = ""
-DISCORD_WEBHOOK = ""
+DISCORD_WEBHOOK: SyncWebhook
 RPC = ""
 
 def get_status_info(sync_info: Dict) -> tuple:
@@ -19,15 +21,19 @@ def get_peer_info(net_info: Dict) -> int:
     return net_info["result"]["n_peers"]
 
 
-def handle_lost_peers():
-    status = subprocess.run("systemctl restart {{ DAEMON }}", shell=True)
+def handle_lost_peers() -> str:
+    message = f'{ datetime.now() } | node: { RPC } | peers lost, node restarted'
+    status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
+    return message, status
 
 
-def handle_stalled(catching_up: bool, latest_block_time: str):
+def handle_stalled(catching_up: bool, latest_block_time: str) -> str:
+    message: str
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%I:%M:%S")
-    if not catching_up and node_stalled():
-        status = subprocess.run("systemctl restart {{ DAEMON }}", shell=True)
-
+    if not catching_up and node_stalled(block_time):
+        status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
+        message = f'{datetime.now()} | node: { RPC } | stalled, node restarted'
+    return message, status
 
 def node_stalled(block_time: datetime) -> bool:
     return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
@@ -62,6 +68,9 @@ def parseArgs():
     )
     return parser.parse_args()
 
+def reduce_block_time(block_time: str) -> str:
+    # turns block time from 2023-02-27T00:48:50.822051683Z to 2023-02-27T00:48:50
+    return block_time[:19]
 
 def main():
     global DAEMON
@@ -71,9 +80,11 @@ def main():
     args = parseArgs()
 
     DAEMON = args.service_file_name
-    DISCORD_WEBHOOK = args.stall_minutes
-    STALL_MINUTES = args.discord
+    STALL_MINUTES = args.stall_minutes
+    DISCORD_WEBHOOK = SyncWebhook.from_url(args.discord)
     RPC = args.rpc
+
+    message: str
 
     # status = requests.get("http://localhost:16257/status").json()
     # net_info = requests.get("http://localhost:16257/net_info").json()
@@ -81,14 +92,16 @@ def main():
     net_info = requests.get("https://juno-rpc.lavenderfive.com/net_info").json()
 
     catching_up, latest_block_time = get_status_info(status["result"]["sync_info"])
-    block_time = datetime.strptime(latest_block_time[:19], "%Y-%m-%dT%I:%M:%S")
     peer_count = get_peer_info(net_info)
     if not peer_count:
-        handle_lost_peers()
-        exit("Restarted daemon")
+        message, status = handle_lost_peers()
+    else:
+        message, status = handle_stalled(catching_up, reduce_block_time(latest_block_time))
 
-    handle_stalled()
-
+    if message and DISCORD_WEBHOOK:
+        logging.info(message + f' | status: { status }')
+        if DISCORD_WEBHOOK:
+            DISCORD_WEBHOOK.send(message)
 
 if __name__ == "__main__":
     main()
