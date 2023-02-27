@@ -76,7 +76,7 @@ def format_block_time(block_time: str) -> str:
     return block_time[:19]
 
 
-def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple(bool, str):
+def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple:
     alert_message = f"❌ | node: { RPC } | "
     restart = False
 
