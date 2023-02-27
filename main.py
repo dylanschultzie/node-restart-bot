@@ -32,18 +32,22 @@ def get_peer_info(net_info: Dict) -> int:
 
 def handle_lost_peers() -> tuple:
     message = f"❌ | node: { RPC } | peers lost, node restarted"
-    status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
-    return message, status
+    output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
+    peer_output = output.stdout.decode("utf-8")
+    logger.warning(f"peers lost output: {peer_output}, code: {output.returncode}")
+    return message, output
 
 
 def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
     message: str = ""
-    status: str = ""
+    output
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%H:%M:%S")
     if not catching_up and node_stalled(block_time):
-        status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
+        output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
+        stalled_output = output.stdout.decode("utf-8")
+        logger.warning(f"stalled node output: {stalled_output}, code: {output.returncode}")
         message = f"❌ | node: { RPC } | stalled, node restarted"
-    return message, status
+    return message, output
 
 
 def node_stalled(block_time: datetime) -> bool:
