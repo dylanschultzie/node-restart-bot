@@ -21,14 +21,14 @@ def get_peer_info(net_info: Dict) -> int:
     return net_info["result"]["n_peers"]
 
 
-def handle_lost_peers() -> str:
+def handle_lost_peers() -> tuple:
     message = f'{ datetime.now() } | node: { RPC } | peers lost, node restarted'
     status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
     return message, status
 
 
-def handle_stalled(catching_up: bool, latest_block_time: str) -> str:
-    message: str
+def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
+    message: str = ''
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%I:%M:%S")
     if not catching_up and node_stalled(block_time):
         status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
@@ -102,10 +102,13 @@ def main():
     else:
         message, status = handle_stalled(catching_up, reduce_block_time(latest_block_time))
 
-    if message and DISCORD_WEBHOOK:
+    if message:
         logging.info(message + f' | status: { status }')
         if DISCORD_WEBHOOK:
             DISCORD_WEBHOOK.send(message)
+    else:
+        logging.info(f'{datetime.now()} | node: { RPC } | healthy')
+
 
 if __name__ == "__main__":
     main()
