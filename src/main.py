@@ -1,11 +1,11 @@
-from typing import Dict
-import requests
-from datetime import datetime, timedelta
-import subprocess
 import argparse
-from discord import SyncWebhook
 import logging
-import json
+import subprocess
+
+from datetime import datetime, timedelta
+from discord import SyncWebhook
+from typing import Dict
+from utils.request import get_response
 
 DAEMON: str
 STALL_MINUTES: int
@@ -94,36 +94,6 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
         logger.warning(f"node output: { restart_output }, code: { output.returncode }")
 
     return restart, alert_message
-
-
-def get_response(end_point: str, query_field=None, query_msg=None):
-    response = None
-
-    try:
-        if query_msg and query_field:
-            response = requests.get(end_point, params={query_field: query_msg})
-        else:
-            response = requests.get(end_point, params={})
-    except Exception as e:
-        logger.exception(e)
-
-    if response is not None and response.status_code == 200:
-        return json.loads(response.text)
-    else:
-        if response is not None:
-            logger.error(
-                "\n\t".join(
-                    (
-                        "Response Error",
-                        str(response.status_code),
-                        str(response.text),
-                    )
-                )
-            )
-        else:
-            logger.error("Response is None")
-
-        return None
 
 
 def alert(alert_message: str):
