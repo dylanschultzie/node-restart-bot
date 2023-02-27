@@ -101,8 +101,6 @@ def main():
 
     message: str
 
-    # status = requests.get("http://localhost:16257/status").json()
-    # net_info = requests.get("http://localhost:16257/net_info").json()
     status = requests.get(f"{ RPC }/status").json()
     net_info = requests.get(f"{ RPC }/net_info").json()
 
