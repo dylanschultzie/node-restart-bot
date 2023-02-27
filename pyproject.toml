@@ -12,6 +12,9 @@ datetime = "^5.0"
 discord = "^2.1.0"
 
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.252"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
