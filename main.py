@@ -62,6 +62,7 @@ def parseArgs():
         "--stall",
         dest="stall_minutes",
         default=2,
+        type=int,
         help="how long can a node be stalled before restarting",
     )
     parser.add_argument(
