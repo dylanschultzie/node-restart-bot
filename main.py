@@ -13,7 +13,7 @@ RPC: str
 
 logger = logging.getLogger(__name__)
 stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
+stream_handler.setLevel(logging.INFO)
 logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
@@ -110,11 +110,11 @@ def main():
         message, status = handle_stalled(catching_up, reduce_block_time(latest_block_time))
 
     if message:
-        logging.info(message + f' | status: { status }')
+        logger.info(message + f' | status: { status }')
         if DISCORD_WEBHOOK:
             DISCORD_WEBHOOK.send(message)
     else:
-        logging.info(f'{datetime.now()} | node: { RPC } | healthy')
+        logger.info(f'{datetime.now()} | node: { RPC } | healthy')
 
 
 if __name__ == "__main__":
