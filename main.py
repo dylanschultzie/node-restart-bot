@@ -34,6 +34,7 @@ def is_stalled(catching_up: bool, latest_block_time: str) -> bool:
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%H:%M:%S")
     return not catching_up and node_stalled(block_time)
 
+
 def node_stalled(block_time: datetime) -> bool:
     return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
 
@@ -81,10 +82,10 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
 
     if is_stalled(catching_up, format_block_time(block_time)):
         restart = True
-        alert_message = f'{ alert_message } node stalled, node restarted'
+        alert_message = f"{ alert_message } node stalled, node restarted"
     elif not peer_count:
         restart = True
-        alert_message = f'{ alert_message } peers lost, node restarted'
+        alert_message = f"{ alert_message } peers lost, node restarted"
 
     if restart:
         output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
@@ -93,9 +94,11 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
 
     return restart, alert_message
 
+
 def alert(alert_message: str):
     if DISCORD_WEBHOOK:
         DISCORD_WEBHOOK.send(alert_message)
+
 
 def main():
     global DAEMON
@@ -116,7 +119,7 @@ def main():
     peer_count = get_peer_info(net_info)
 
     restart, alert_message = handle_restart(peer_count, catching_up, format_block_time(latest_block_time))
-    
+
     if restart:
         alert(alert_message)
     else:
