@@ -4,9 +4,10 @@ from datetime import datetime, timedelta
 import subprocess
 import argparse
 
-DAEMON=''
-STALL_MINUTES=''
-DISCORD_WEBHOOK=''
+DAEMON = ""
+STALL_MINUTES = ""
+DISCORD_WEBHOOK = ""
+RPC = ""
 
 def get_status_info(sync_info: Dict) -> tuple:
     catching_up = sync_info["catching_up"]
@@ -31,9 +32,16 @@ def handle_stalled(catching_up: bool, latest_block_time: str):
 def node_stalled(block_time: datetime) -> bool:
     return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
 
+
 def parseArgs():
     parser = argparse.ArgumentParser(
         description="Create script that will check if node is stalled, and restart if so."
+    )
+    parser.add_argument(
+        "--rpc",
+        dest="rpc",
+        required=True,
+        help="local rpc endpoint (ex. http://localhost:26657)",
     )
     parser.add_argument(
         "--daemon",
@@ -55,15 +63,17 @@ def parseArgs():
     return parser.parse_args()
 
 
-
 def main():
     global DAEMON
     global DISCORD_WEBHOOK
     global STALL_MINUTES
+    global RPC
     args = parseArgs()
+
     DAEMON = args.service_file_name
     DISCORD_WEBHOOK = args.stall_minutes
     STALL_MINUTES = args.discord
+    RPC = args.rpc
 
     # status = requests.get("http://localhost:16257/status").json()
     # net_info = requests.get("http://localhost:16257/net_info").json()
