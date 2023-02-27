@@ -29,6 +29,7 @@ def handle_lost_peers() -> tuple:
 
 def handle_stalled(catching_up: bool, latest_block_time: str) -> tuple:
     message: str = ''
+    status: str = ''
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%I:%M:%S")
     if not catching_up and node_stalled(block_time):
         status = subprocess.run(f"systemctl restart { DAEMON }", shell=True)
