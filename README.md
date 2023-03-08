@@ -1,6 +1,10 @@
 ## Installation
 
 1. Requires python 3.11+
+3. Requires poetry 1.4.0+
+```
+curl -sSL https://install.python-poetry.org | python3 -
+```
 2. Install dependencies:
 ```
 poetry install
