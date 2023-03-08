@@ -35,13 +35,13 @@ def is_stalled(catching_up: bool, latest_block_time: str) -> bool:
     logger.info(f'is stalled: catching_up: {False}, latest_block_time: {latest_block_time}')
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%H:%M:%S")
     logger.info(f'block_time: {block_time}')
-    logger.info(f'now: {datetime.now()} - a few minutes ago: {timedelta(minutes=STALL_MINUTES)}')
+    logger.info(f'now: {datetime.utcnow()} - a few minutes ago: {timedelta(minutes=STALL_MINUTES)}')
     logger.info(f'node_stalled: {node_stalled(block_time)}')
     return not catching_up and node_stalled(block_time)
 
 
 def node_stalled(block_time: datetime) -> bool:
-    return block_time < (datetime.now() - timedelta(minutes=STALL_MINUTES))
+    return block_time < (datetime.utcnow() - timedelta(minutes=STALL_MINUTES))
 
 
 def parseArgs():
