@@ -102,7 +102,10 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
 
 def alert(alert_message: str):
     if DISCORD_WEBHOOK:
-        DISCORD_WEBHOOK.send(alert_message)
+        try:
+            DISCORD_WEBHOOK.send(alert_message)
+        except Exception as e:
+            logger.error(f'Discord message failed; Exception: {e}')
 
 
 def get_args():
