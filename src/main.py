@@ -32,10 +32,10 @@ def get_peer_info(net_info: Dict) -> int:
 
 
 def is_stalled(catching_up: bool, latest_block_time: str) -> bool:
-    logger.info(f'is stalled: catching_up: {False}, latest_block_time: {latest_block_time}')
     block_time = datetime.strptime(latest_block_time, "%Y-%m-%dT%H:%M:%S")
-    logger.info(f'block_time: {block_time}')
-    logger.info(f'now: {datetime.utcnow()} - a few minutes ago: {timedelta(minutes=STALL_MINUTES)}')
+    logger.info(f'catching_up: {catching_up}')
+    logger.info(f'latest_block_time: {block_time}')
+    logger.info(f'current utc time: {datetime.utcnow()}')
     logger.info(f'node_stalled: {node_stalled(block_time)}')
     return not catching_up and node_stalled(block_time)
 
@@ -125,7 +125,6 @@ def main():
     net_info = get_response(f"{ RPC }/net_info")
 
     catching_up, latest_block_time = get_status_info(status["result"]["sync_info"])
-    logger.info(f'catching_up: {catching_up}, latest_block_time: {latest_block_time}')
     peer_count = get_peer_info(net_info)
     logger.info(f'peers: {peer_count}')
 
