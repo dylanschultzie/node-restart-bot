@@ -36,7 +36,6 @@ def is_stalled(catching_up: bool, latest_block_time: str) -> bool:
     logger.info(f'catching_up: {catching_up}')
     logger.info(f'latest_block_time: {block_time}')
     logger.info(f'current utc time: {datetime.utcnow()}')
-    logger.info(f'node_stalled: {node_stalled(block_time)}')
     return not catching_up and node_stalled(block_time)
 
 
@@ -86,15 +85,18 @@ def handle_restart(peer_count: int, catching_up: bool, block_time: str) -> tuple
     restart = False
 
     if is_stalled(catching_up, format_block_time(block_time)):
+        logger.info(f'node_stalled: True')
         restart = True
-        alert_message = f"{ alert_message } node stalled, node restarted"
+        alert_message = f"{ alert_message } node stalled"
     elif peer_count == 0:
         restart = True
-        alert_message = f"{ alert_message } peers lost, node restarted"
+        alert_message = f"{ alert_message } peers lost"
 
     if restart:
+        alert_message = f"{ alert_message }, node attempting to be restarted"
         output = subprocess.run(f"sudo systemctl restart { DAEMON }", shell=True, capture_output=True)
         restart_output = output.stdout.decode("utf-8")
+        logger.info(alert_message)
         logger.warning(f"node output: { restart_output }, code: { output.returncode }")
 
     return restart, alert_message
